@@ -94,6 +94,11 @@ static int connect_to_server(const char* ipaddr, char* path, char* port)
 	}
 
 
+	connect(sock, server_info->ai_addr, server_info->ai_addrlen);
+
+	// dont forget to check for errors!!!
+
+
 
 
 
