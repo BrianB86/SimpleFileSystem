@@ -1,12 +1,5 @@
 
 
-
-
-
-
-
-
-
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -69,6 +62,8 @@ static int connect_to_server(const char* ipaddr, char* path, char* port)
 	int setup, sock;
 	struct addrinfo hints;
 	struct addrinfo *server_info;
+	char recvBuf[1024] = {0}; //buffer of recieved data. This is temp to get the idea of recv!!!!
+	int recvSize = 1024; // size of recvBuf
 
 
 	memset(&hints, 0, sizeof(hints)); //Makes sure no info is in struct.
@@ -94,13 +89,46 @@ static int connect_to_server(const char* ipaddr, char* path, char* port)
 	}
 
 
-	connect(sock, server_info->ai_addr, server_info->ai_addrlen);
+	if(connect(sock, server_info->ai_addr, server_info->ai_addrlen) == -1)
+	{
+		perror("Connection Error");
+		return -1;
+	}
+	
+	/* Testing Code */
+	char* message = "Hello Server";
+	int len, bytes_sent;
+	len = strlen(message);
+	
+	
+	
+	bytes_sent = send(sock,message,len,0);
+	
+	if(bytes_sent == -1)
+	{
+		perror("Error in sending bytes to Server");
+		return -1;
+		
+	}
+	
+	int bytes_recieved = recv(sock,recvBuf,recvSize);
+	
+	if(bytes_recieved == -1)
+	{
+		perror("Error in Recieving Bytes");
+		return -1;
+		
+	}else if(bytes_recieved == 0)
+		{
+			perror("Connection to server is closed");
+			return -1;
+		}
 
-	// dont forget to check for errors!!!
-
-
-
-
+	recvBuf[bytes_recieved] = '\0';
+	
+	close(sock);
+	
+	return 0;
 
 }
 
@@ -113,8 +141,6 @@ int main(int argc, char *argv[])
 	}
 
 connect_to_server(argv[0],argv[1],argv[2]);
-
-//check fuse wether we can make our own connect or connect through fuse.
 
 
 
