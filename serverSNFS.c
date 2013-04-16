@@ -1,6 +1,4 @@
 
-
-
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -21,6 +19,7 @@ void sigchld_handler(int s)
 static int start_server(char* port, char* path)
 {
 	int sock;
+	int connected;
 	int yes = 1;
 	struct addrinfo hints;
 	struct addrinfo *server_info;
@@ -91,6 +90,16 @@ static int start_server(char* port, char* path)
 	while(1) 
 	{
 		sin_size = sizeof(client_addr);
+		conencted = accept(sock, (struct sockaddr *) &client_addr, &sin_size); 
+		
+		if(connected == -1)
+		{
+			perror("Connection: accept");
+			exit(1);
+		}
+		
+		inet_ntop(client_addr.ss_family,)
+		
 	}
 	
 	
