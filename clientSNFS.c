@@ -62,7 +62,7 @@ static int connect_to_server(const char* ipaddr, char* path, char* port)
 	int setup, sock;
 	struct addrinfo hints;
 	struct addrinfo *server_info;
-	char recvBuf[1024] = {0}; //buffer of recieved data. This is temp to get the idea of recv!!!!
+	char recvBuf[1024] = {0}; //buffer of received data. This is temp to get the idea of recv!!!!
 	int recvSize = 1024; // size of recvBuf
 
 
@@ -91,9 +91,12 @@ static int connect_to_server(const char* ipaddr, char* path, char* port)
 
 	if(connect(sock, server_info->ai_addr, server_info->ai_addrlen) == -1)
 	{
+		close(sock);
 		perror("Connection Error");
 		return -1;
 	}
+	
+	printf("Client Connecting");
 	
 	/* Testing Code */
 	char* message = "Hello Server";
@@ -111,20 +114,24 @@ static int connect_to_server(const char* ipaddr, char* path, char* port)
 		
 	}
 	
-	int bytes_recieved = recv(sock,recvBuf,recvSize);
+	freeaddrinfo(server_info);
 	
-	if(bytes_recieved == -1)
+	int bytes_received = recv(sock,recvBuf-1,recvSize);
+	
+	if(bytes_received == -1)
 	{
-		perror("Error in Recieving Bytes");
+		perror("Error in Receiving Bytes");
 		return -1;
 		
-	}else if(bytes_recieved == 0)
+	}else if(bytes_received == 0)
 		{
 			perror("Connection to server is closed");
 			return -1;
 		}
 
-	recvBuf[bytes_recieved] = '\0';
+	recvBuf[bytes_received] = '\0';
+	
+	printf("client received '%s' \n",recvBuf);
 	
 	close(sock);
 	
