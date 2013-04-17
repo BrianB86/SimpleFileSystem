@@ -11,6 +11,18 @@
 
 
 
+
+/*
+struct sockaddr_storage {
+    sa_family_t  ss_family;     // address family
+    // all this is padding, implementation specific, ignore it:
+    char      __ss_pad1[_SS_PAD1SIZE];
+    int64_t   __ss_align;
+    char      __ss_pad2[_SS_PAD2SIZE];
+
+};
+*/
+
 void sigchld_handler(int s)
 {
 	while(waitpid(-1, NULL, WNOHANG) > 0);
@@ -26,6 +38,8 @@ static int start_server(char* port, char* path)
 	struct sigaction sigact;
 	socklen_t sin_size;
 	struct sockaddr_storage client_addr; // client's address info
+	char recvBuf[1024];
+	int recvSize = 1024;
 
 	
 	
@@ -90,7 +104,7 @@ static int start_server(char* port, char* path)
 	while(1) 
 	{
 		sin_size = sizeof(client_addr);
-		conencted = accept(sock, (struct sockaddr *) &client_addr, &sin_size); 
+		connected = accept(sock, (struct sockaddr *) &client_addr, &sin_size); 
 		
 		if(connected == -1)
 		{
@@ -98,7 +112,14 @@ static int start_server(char* port, char* path)
 			exit(1);
 		}
 		
-		inet_ntop(client_addr.ss_family,)
+		{
+			bytes_recieved = recv(connected,recv_data,1024,0);
+			recvBuf[bytes_received] = '\0';
+	
+			printf("Server received '%s' \n",recvBuf);
+			
+			close(connected);
+		}
 		
 	}
 	
