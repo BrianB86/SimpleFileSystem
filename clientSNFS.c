@@ -91,7 +91,6 @@ static int connect_to_server(const char* ipaddr, char* path, char* port)
 
 	if(connect(sock, server_info->ai_addr, server_info->ai_addrlen) == -1)
 	{
-		close(sock);
 		perror("Connection Error");
 		return -1;
 	}
@@ -116,7 +115,7 @@ static int connect_to_server(const char* ipaddr, char* path, char* port)
 	
 	freeaddrinfo(server_info);
 	
-	int bytes_received = recv(sock,recvBuf-1,recvSize);
+	int bytes_received = recv(sock,recvBuf-1,recvSize,0);
 	
 	if(bytes_received == -1)
 	{
@@ -148,6 +147,8 @@ int main(int argc, char *argv[])
 	}
 
 connect_to_server(argv[0],argv[1],argv[2]);
+
+return 0;
 
 
 

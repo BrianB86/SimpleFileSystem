@@ -9,8 +9,10 @@
 #include <errno.h>
 #include <string.h>
 #include <pthread.h>
-#include <signals.h>
+#include <signal.h>
 #include <semaphore.h>
+#include <netdb.h>
+#include <sys/wait.h>
 
 
 
@@ -52,7 +54,7 @@ void sigchld_handler(int s)
 
 static int start_server(char* port, char* path)
 {
-	int sock;
+	int sock, setup;
 	int connected;
 	int yes = 1;
 	struct addrinfo hints;
@@ -86,7 +88,7 @@ static int start_server(char* port, char* path)
 		return 1;
 	}
 	
-	sock = socket(server_info->ai_family,server_info->ai_socketype, server_info->ai_protocol);
+	sock = socket(server_info->ai_family,server_info->ai_socktype, server_info->ai_protocol);
 	
 	if(sock == -1)
 	{
@@ -144,7 +146,7 @@ static int start_server(char* port, char* path)
 			args = connected;
 			//pthread_create (&ids, &attr, my_thread, &args); Create the thread on connection.
  			
-			bytes_recieved = recv(connected,recv_data,1024,0);
+			int bytes_received = recv(connected,recvBuf-1,recvSize,0);
 			recvBuf[bytes_received] = '\0';
 	
 			printf("Server received '%s' \n",recvBuf);
@@ -167,6 +169,8 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	
-	start_server(argv[0].argv[1]);
+	start_server(argv[0],argv[1]);
+	
+	return 0;
 	
 }
