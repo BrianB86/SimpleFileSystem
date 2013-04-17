@@ -2,7 +2,7 @@ CC = gcc
 
 CFLAG = -Wall `pkg-config fuse --cflags --libs`
 
-target: serverSNFS.c clientSNFS.c 
+target: serverSNFS clientSNFS 
 
 clientSNFS: clientSNFS.c 
 	$(CC) $(CFLAG) -o $@ $<
