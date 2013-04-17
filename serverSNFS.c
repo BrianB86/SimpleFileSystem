@@ -8,6 +8,9 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
+#include <pthread.h>
+#include <signals.h>
+#include <semaphore.h>
 
 
 
@@ -23,10 +26,29 @@ struct sockaddr_storage {
 };
 */
 
+/* Thread semaphores to make sure we don't go over 10 connections*/
+
+sem_t thread_sem[10];  
+int   next_thread;  
+int   runnable;
+int   thread_stopped[10];
+ 
+
+
 void sigchld_handler(int s)
 {
 	while(waitpid(-1, NULL, WNOHANG) > 0);
 }
+
+//may have to make a dedicated function for threads.
+
+/*void my_thread(arguments)
+{
+	pthread_exit(NULL);
+}
+*/
+
+
 
 static int start_server(char* port, char* path)
 {
@@ -40,6 +62,10 @@ static int start_server(char* port, char* path)
 	struct sockaddr_storage client_addr; // client's address info
 	char recvBuf[1024];
 	int recvSize = 1024;
+	
+	unsigned int args;                    
+    pthread_attr_t attr;     
+    pthread_t ids;  
 
 	
 	
@@ -101,6 +127,8 @@ static int start_server(char* port, char* path)
 	
 	printf("Waiting for connections...\n");
 	
+	pthread_attr_init(&attr);
+	
 	while(1) 
 	{
 		sin_size = sizeof(client_addr);
@@ -113,6 +141,9 @@ static int start_server(char* port, char* path)
 		}
 		
 		{
+			args = connected;
+			//pthread_create (&ids, &attr, my_thread, &args); Create the thread on connection.
+ 			
 			bytes_recieved = recv(connected,recv_data,1024,0);
 			recvBuf[bytes_received] = '\0';
 	
@@ -122,10 +153,8 @@ static int start_server(char* port, char* path)
 		}
 		
 	}
-	
-	
-
-	
+	close(sock);
+	return 0;
 }
 
 
