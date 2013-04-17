@@ -151,6 +151,17 @@ static int start_server(char* port, char* path)
 	
 			printf("Server received '%s' \n",recvBuf);
 			
+			/* Testing code*/
+			
+			if (!fork()) 
+			{ // this is the child process
+				close(sock); // child doesn't need the listener
+				if (send(connected, "Hello, world!", 13, 0) == -1)
+					perror("send");
+				close(connected);
+				exit(0);
+			}
+			
 			close(connected);
 		}
 		
