@@ -182,7 +182,7 @@ static int start_server(char* port, char* path)
 		
 		{
 			args = client_connected;
-			pthread_create (&ids, &attr, client, &args); //Create the thread on connection.
+			//pthread_create(&ids, &attr, client, &args); //Create the thread on connection.
  			
 		//	int bytes_received = recv(client_connected,recvBuf-1,recvSize,0);
 			//recvBuf[bytes_received] = '\0';
