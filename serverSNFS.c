@@ -30,40 +30,71 @@ struct sockaddr_storage {
 
 /* Thread semaphores to make sure we don't go over 10 connections*/
 
+#define RECV_SIZE 1024
+
+
 sem_t thread_sem[10];  
 int   next_thread;  
 int   runnable;
-int   thread_stopped[10];
+int   threads_stopped[10];
+unsigned int client_connected;
  
 
+/* Testing code */
 
 void sigchld_handler(int s)
 {
 	while(waitpid(-1, NULL, WNOHANG) > 0);
 }
 
-//may have to make a dedicated function for threads.
-
-/*void my_thread(arguments)
+void *client(void *params)			// thread implementation!! check what each call sends.
 {
+	unsigned int client_connected_cp; // cp == copy dunno if it is needed
+	
+	char recvBuf[RECV_SIZE];
+	
+	client_connected_cp = *(unsigned int *)params;
+	
+	int bytes_received = recv(client_connected,recvBuf-1,RECV_SIZE,0);
+	
+	if(bytes_received < 0)
+	{
+		perror("Client could not be read properly recv error\n");
+	}
+	
+	recvBuf[bytes_received] = '\0';
+	
+	printf("Server received '%s' \n",recvBuf);
+	
+	/* This code area is for finding out what command and params got sent to server */
+	/*BEGIN*/
+	
+	static const char* file01_content = "You can see file01\n"; //placeholder take from example
+	
+	if(strcmp(recvBuf, "/file01") == 0)
+	{
+		send(client_connected,file01_content,strlen(file01_content),0);
+	}
+	
+	/*END*/
+	
+	close(client_connected);
 	pthread_exit(NULL);
 }
-*/
 
 
 
 static int start_server(char* port, char* path)
 {
-	int sock, setup;
-	int connected;
+	int server_sock, setup;
 	int yes = 1;
 	struct addrinfo hints;
 	struct addrinfo *server_info;
 	struct sigaction sigact;
 	socklen_t sin_size;
 	struct sockaddr_storage client_addr; // client's address info
-	char recvBuf[1024];
-	int recvSize = 1024;
+	//char recvBuf[1024];
+	//int recvSize = 1024;
 	
 	unsigned int args;                    
     pthread_attr_t attr;     
@@ -88,42 +119,43 @@ static int start_server(char* port, char* path)
 		return 1;
 	}
 	
-	sock = socket(server_info->ai_family,server_info->ai_socktype, server_info->ai_protocol);
+	server_sock = socket(server_info->ai_family,server_info->ai_socktype, server_info->ai_protocol);
 	
-	if(sock == -1)
+	if(server_sock == -1)
 	{
-		perror("server: socket");
+		perror("server: socket\n");
 		return -1;
 	}
 	
-	if(setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1)
+	if(setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1)
 	{
-		perror("setsockopt");
+		perror("setsockopt\n");
 		exit(1);
 	} 
 	
-	if(bind(sock,server_info->ai_addr, server_info->ai_addrlen) == -1)
+	if(bind(server_sock,server_info->ai_addr, server_info->ai_addrlen) == -1)
 	{
-		close(sock);
-		perror("server:bind");
+		close(server_sock);
+		perror("server:bind\n");
 		exit(1);
 	}
 	
 	freeaddrinfo(server_info);
 	
-	if(listen(sock,10) == -1)
+	if(listen(server_sock,10) == -1)
 	{
-		perror("listen");
+		perror("listening error:\n");
 		exit(1);
 	}
 	
+	/*Testing Code */
 	sigact.sa_handler = sigchld_handler;
 	sigemptyset(&sigact.sa_mask);
 	sigact.sa_flags = SA_RESTART;
 	
 	if (sigaction(SIGCHLD, &sigact, NULL) == -1) 
 	{
-		perror("sigaction");
+		perror("sigaction\n");
 		exit(1);
 	}
 	
@@ -133,40 +165,44 @@ static int start_server(char* port, char* path)
 	
 	while(1) 
 	{
+		printf("Server up.\n");
 		sin_size = sizeof(client_addr);
-		connected = accept(sock, (struct sockaddr *) &client_addr, &sin_size); 
+		client_connected = accept(server_sock, (struct sockaddr *) &client_addr, &sin_size);
 		
-		if(connected == -1)
+		printf("Creating a new client connection.\n");
+		 
+		
+		if(client_connected == -1)
 		{
-			perror("Connection: accept");
+			perror("Connection: error in creating socket\n");
 			exit(1);
 		}
 		
 		{
-			args = connected;
-			//pthread_create (&ids, &attr, my_thread, &args); Create the thread on connection.
+			args = client_connected;
+			pthread_create (&ids, &attr, client, &args); //Create the thread on connection.
  			
-			int bytes_received = recv(connected,recvBuf-1,recvSize,0);
-			recvBuf[bytes_received] = '\0';
+		//	int bytes_received = recv(client_connected,recvBuf-1,recvSize,0);
+			//recvBuf[bytes_received] = '\0';
 	
-			printf("Server received '%s' \n",recvBuf);
+			//printf("Server received '%s' \n",recvBuf);
 			
 			/* Testing code*/
 			
 			if (!fork()) 
 			{ // this is the child process
-				close(sock); // child doesn't need the listener
-				if (send(connected, "Hello, world!", 13, 0) == -1)
-					perror("send");
-				close(connected);
+				close(server_sock); // child doesn't need the listener
+				if (send(client_connected, "Hello, world!", 13, 0) == -1)
+					perror("send\n");
+				close(client_connected);
 				exit(0);
 			}
 			
-			close(connected);
+			close(client_connected);
 		}
 		
 	}
-	close(sock);
+	close(server_sock);
 	return 0;
 }
 
