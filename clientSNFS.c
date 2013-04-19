@@ -64,6 +64,14 @@ static int connect_to_server(const char* ipaddr, char* path, char* port)
 	struct addrinfo *server_info;
 	char recvBuf[1024] = {0}; //buffer of received data. This is temp to get the idea of recv!!!!
 	int recvSize = 1024; // size of recvBuf
+	
+	int good_port = atoi(port);
+	char port_buff[50];
+	sprintf(port_buff, "%d",good_port);
+	
+	int good_ip = atoi(ipaddr);
+	char ip_buff[100];
+	sprintf(ip_buff, "%d",good_ip);
 
 
 	memset(&hints, 0, sizeof(hints)); //Makes sure no info is in struct.
@@ -72,7 +80,7 @@ static int connect_to_server(const char* ipaddr, char* path, char* port)
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_protocol = 0;
 	
-	setup = getaddrinfo(ipaddr,port,&hints,&server_info); //server_info points to a linked list of struct addrinfos each contains sockaddr.
+	setup = getaddrinfo(ip_buff,port_buff,&hints,&server_info); //server_info points to a linked list of struct addrinfos each contains sockaddr.
 
 	if(setup != 0)
 	{
@@ -91,8 +99,15 @@ static int connect_to_server(const char* ipaddr, char* path, char* port)
 
 	if(connect(sock, server_info->ai_addr, server_info->ai_addrlen) == -1)
 	{
+		close(sock);
 		perror("Connection Error");
 		return -1;
+	}
+	
+	if(server_info == NULL)
+	{
+		fprintf(stderr, "Failed Connection.\n");
+		return 2;
 	}
 	
 	printf("Client Connecting");
@@ -142,13 +157,13 @@ int fuse_getattr(const char *path, struct stat *statbuf)
 {
 	int res = 0;
 	
-	
+	return res;
 	
 }
 
 int main(int argc, char *argv[])
 {
-	if (argc !=3)
+	if (argc !=4)
 	{
 		fprintf(stderr, "usage: IP Address, Port, directory.\n");
 		return 1;

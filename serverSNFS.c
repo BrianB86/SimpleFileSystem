@@ -95,11 +95,13 @@ static int start_server(char* port, char* path)
 	struct sockaddr_storage client_addr; // client's address info
 	//char recvBuf[1024];
 	//int recvSize = 1024;
-	
 	unsigned int args;                    
     pthread_attr_t attr;     
     pthread_t ids;  
-
+	
+	int good_port = atoi(port);
+	char port_buff[50];
+	sprintf(port_buff, "%d",good_port);
 	
 	
 	
@@ -108,10 +110,9 @@ static int start_server(char* port, char* path)
 	
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_protocol = 0;
 	hints.ai_flags = AI_PASSIVE; // using computers IP address
 	
-	setup = getaddrinfo(NULL,port,&hints,&server_info);
+	setup = getaddrinfo(NULL,port_buff,&hints,&server_info);
 	
 	if(setup != 0)
 	{
@@ -124,7 +125,7 @@ static int start_server(char* port, char* path)
 	if(server_sock == -1)
 	{
 		perror("server: socket\n");
-		return -1;
+		exit(1);
 	}
 	
 	if(setsockopt(server_sock, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1)
@@ -151,8 +152,7 @@ static int start_server(char* port, char* path)
 	/*Testing Code */
 	sigact.sa_handler = sigchld_handler;
 	sigemptyset(&sigact.sa_mask);
-	sigact.sa_flags = SA_RESTART;
-	
+	sigact.sa_flags = SA_RESTART;	
 	if (sigaction(SIGCHLD, &sigact, NULL) == -1) 
 	{
 		perror("sigaction\n");
@@ -162,12 +162,14 @@ static int start_server(char* port, char* path)
 	printf("Waiting for connections...\n");
 	
 	pthread_attr_init(&attr);
+	fflush(stdout);
+
 	
 	while(1) 
 	{
 		printf("Server up.\n");
 		sin_size = sizeof(client_addr);
-		client_connected = accept(server_sock, (struct sockaddr *) &client_addr, &sin_size);
+		client_connected = accept(server_sock, (struct sockaddr *)&client_addr, &sin_size);
 		
 		printf("Creating a new client connection.\n");
 		 
@@ -210,7 +212,7 @@ static int start_server(char* port, char* path)
 
 int main(int argc, char *argv[])
 {
-	if (argc !=2)
+	if (argc !=3)
 	{
 		fprintf(stderr, "usage: Port, directory.\n");
 		return 1;
