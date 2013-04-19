@@ -138,6 +138,14 @@ static int connect_to_server(const char* ipaddr, char* path, char* port)
 
 }
 
+int fuse_getattr(const char *path, struct stat *statbuf)
+{
+	int res = 0;
+	
+	
+	
+}
+
 int main(int argc, char *argv[])
 {
 	if (argc !=3)
