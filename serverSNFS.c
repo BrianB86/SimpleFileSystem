@@ -93,6 +93,8 @@ static int start_server(char* port, char* path)
 	struct sigaction sigact;
 	socklen_t sin_size;
 	struct sockaddr_storage client_addr; // client's address info
+	char recvBuf[1024];
+	int recvSize = 1024;
 	unsigned int args;                    
     pthread_attr_t attr;     
     pthread_t ids;  
@@ -180,12 +182,12 @@ static int start_server(char* port, char* path)
 		
 		{
 			args = client_connected;
-			//pthread_create(&ids, &attr, client, &args); //Create the thread on connection.
+			pthread_create(&ids, &attr, client, &args); //Create the thread on connection.
  			
-		//	int bytes_received = recv(client_connected,recvBuf-1,recvSize,0);
-			//recvBuf[bytes_received] = '\0';
+			int bytes_received = recv(client_connected,recvBuf,recvSize,0);
+			recvBuf[bytes_received] = '\0';
 	
-			//printf("Server received '%s' \n",recvBuf);
+			printf("Server received '%s' \n",recvBuf);
 			
 			/* Testing code*/
 			
