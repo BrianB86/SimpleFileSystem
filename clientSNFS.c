@@ -69,11 +69,6 @@ static int connect_to_server(const char* ipaddr, char* port, char* path)
 	char port_buff[50];
 	sprintf(port_buff, "%d",good_port);
 	
-	//int good_ip = atoi(ipaddr);
-	//char ip_buff[100];
-	//sprintf(ip_buff, "%d",ipaddr);
-	
-
 
 	memset(&hints, 0, sizeof(hints)); //Makes sure no info is in struct.
 
