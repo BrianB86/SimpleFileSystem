@@ -1,5 +1,5 @@
 
-
+#include <fuse.h>
 #include <stdio.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 
+#define FUSE_USE_VERSION 26
 
 /* Reference to the sockaddr struct
  *
@@ -53,8 +54,6 @@
  *
  */
 
-
-//128.6.13.174
 
 
 static int connect_to_server(const char* ipaddr, char* port, char* path)
@@ -151,7 +150,7 @@ static int connect_to_server(const char* ipaddr, char* port, char* path)
 
 }
 
-int fuse_getattr(const char *path, struct stat *statbuf)
+int fuse_getattr(const char *path, struct stat *statbuf) //gets the arttribues of the file
 {
 	int res = 0;
 	
@@ -164,6 +163,42 @@ int fuse_getattr(const char *path, struct stat *statbuf)
 	return res;
 	
 }
+
+int fuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi)
+{
+	int res = 0;
+	
+}
+
+int fuse_mkdir(const char *path, mode_t mode)
+{
+	int res =0;
+	
+	res = mkdir(path,mode);
+	if(res < 0)
+	{
+		perror("mkdir error");
+	}
+	
+	return res;
+}
+
+int fuse_truncate(const char *path, off_t size)
+{
+	int res =0;
+	
+	res = truncate(path,size);
+	if(res < 0)
+	{
+		perror("truncate error");
+	}
+	
+	return res;
+}
+
+
+
+
 
 
 
