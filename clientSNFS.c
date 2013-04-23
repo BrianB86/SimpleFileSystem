@@ -160,9 +160,17 @@ int fuse_getattr(const char *path, struct stat *statbuf)
 {
 	int res = 0;
 	
+	res = lstat(path,statbuf);
+	if(res != 0)
+	{
+		perror("lstat error");
+	}
+	
 	return res;
 	
 }
+
+
 
 int main(int argc, char *argv[])
 {
