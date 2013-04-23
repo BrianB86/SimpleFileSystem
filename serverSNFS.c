@@ -55,7 +55,7 @@ void *client(void *params)			// thread implementation!! check what each call sen
 	
 	client_connected_cp = *(unsigned int *)params;
 	
-	int bytes_received = recv(client_connected,recvBuf-1,RECV_SIZE,0);
+	int bytes_received = recv(client_connected,recvBuf,RECV_SIZE,0);
 	
 	if(bytes_received < 0)
 	{
@@ -105,7 +105,6 @@ static int start_server(char* port, char* path)
 	
 	
 	
-	
 	memset(&hints, 0, sizeof(hints)); //Makes sure no info is in struct.
 	
 	hints.ai_family = AF_INET;
@@ -113,6 +112,7 @@ static int start_server(char* port, char* path)
 	hints.ai_flags = AI_PASSIVE; // using computers IP address
 	
 	setup = getaddrinfo(NULL,port_buff,&hints,&server_info);
+	printf("Port: %s\n",port_buff);
 	
 	if(setup != 0)
 	{
@@ -218,7 +218,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	
-	start_server(argv[0],argv[1]);
+	start_server(argv[1],argv[2]);
 	
 	return 0;
 	

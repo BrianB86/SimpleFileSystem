@@ -54,10 +54,10 @@
  */
 
 
+//128.6.13.174
 
 
-
-static int connect_to_server(const char* ipaddr, char* path, char* port)
+static int connect_to_server(const char* ipaddr, char* port, char* path)
 {
 	int setup, sock;
 	struct addrinfo hints;
@@ -69,9 +69,10 @@ static int connect_to_server(const char* ipaddr, char* path, char* port)
 	char port_buff[50];
 	sprintf(port_buff, "%d",good_port);
 	
-	int good_ip = atoi(ipaddr);
-	char ip_buff[100];
-	sprintf(ip_buff, "%d",good_ip);
+	//int good_ip = atoi(ipaddr);
+	//char ip_buff[100];
+	//sprintf(ip_buff, "%d",ipaddr);
+	
 
 
 	memset(&hints, 0, sizeof(hints)); //Makes sure no info is in struct.
@@ -80,8 +81,10 @@ static int connect_to_server(const char* ipaddr, char* path, char* port)
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_protocol = 0;
 	
-	setup = getaddrinfo(ip_buff,port_buff,&hints,&server_info); //server_info points to a linked list of struct addrinfos each contains sockaddr.
-
+	setup = getaddrinfo(ipaddr,port_buff,&hints,&server_info); //server_info points to a linked list of struct addrinfos each contains sockaddr.
+	
+	printf("Port: %s\n",port_buff);
+	printf("Ip: %s\n",ipaddr);
 	if(setup != 0)
 	{
 		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(setup));
@@ -100,17 +103,17 @@ static int connect_to_server(const char* ipaddr, char* path, char* port)
 	if(connect(sock, server_info->ai_addr, server_info->ai_addrlen) == -1)
 	{
 		close(sock);
-		perror("Connection Error");
+		perror("Connection Error:");
 		return -1;
 	}
 	
 	if(server_info == NULL)
 	{
-		fprintf(stderr, "Failed Connection.\n");
+		fprintf(stderr, "Failed Connection.");
 		return 2;
 	}
 	
-	printf("Client Connecting");
+	printf("Client Connecting\n");
 	
 	/* Testing Code */
 	char* message = "Hello Server";
@@ -130,7 +133,7 @@ static int connect_to_server(const char* ipaddr, char* path, char* port)
 	
 	freeaddrinfo(server_info);
 	
-	int bytes_received = recv(sock,recvBuf-1,recvSize,0);
+	int bytes_received = recv(sock,recvBuf,recvSize,0);
 	
 	if(bytes_received == -1)
 	{
@@ -169,7 +172,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-connect_to_server(argv[0],argv[1],argv[2]);
+connect_to_server(argv[1],argv[2],argv[3]);
 
 return 0;
 
