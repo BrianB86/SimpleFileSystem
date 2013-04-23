@@ -93,8 +93,6 @@ static int start_server(char* port, char* path)
 	struct sigaction sigact;
 	socklen_t sin_size;
 	struct sockaddr_storage client_addr; // client's address info
-	//char recvBuf[1024];
-	//int recvSize = 1024;
 	unsigned int args;                    
     pthread_attr_t attr;     
     pthread_t ids;  
