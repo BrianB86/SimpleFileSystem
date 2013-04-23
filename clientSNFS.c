@@ -196,8 +196,30 @@ int fuse_truncate(const char *path, off_t size)
 	return res;
 }
 
+int fuse_open(const char *path, struct fuse_file_info *fi)
+{
+	int res = 0;
+	
+	int filedes;
+	
+	filedes = open(path, fi->flags);
+	
+	if(filedes < 0)
+	{
+		perror("Open error");
+	}
+	
+	return res;
+}
 
 
+static struct fuse_operations fuse_oper = 
+{
+	.getattr = fuse_getattr,
+	.mkdir = fuse_mkdir,
+	.truncate = fuse_truncate,
+	
+};
 
 
 
