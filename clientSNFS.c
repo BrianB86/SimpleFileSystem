@@ -56,11 +56,13 @@
 
 
 
-static int connect_to_server(const char* ipaddr, char* port, char* path, char* buf, int size)
+static int connect_to_server(const char* ipaddr, char* port, char* path)
 {
 	int setup, sock;
 	struct addrinfo hints;
 	struct addrinfo *server_info;
+	char recvBuf[1024] = {0}; //buffer of received data. This is temp to get the idea of recv!!!!
+	int recvSize = 1024; // size of recvBuf
 	
 	int good_port = atoi(port);
 	char port_buff[50];
@@ -125,7 +127,7 @@ static int connect_to_server(const char* ipaddr, char* port, char* path, char* b
 	
 	freeaddrinfo(server_info);
 	
-	int bytes_received = recv(sock,buf,size,0);
+	int bytes_received = recv(sock,recvBuf,recvSize,0);
 	
 	if(bytes_received == -1)
 	{
@@ -138,9 +140,9 @@ static int connect_to_server(const char* ipaddr, char* port, char* path, char* b
 			return -1;
 		}
 
-	buf[bytes_received] = '\0';
+	recvBuf[bytes_received] = '\0';
 	
-	printf("client received '%s' \n",buf);
+	printf("client received '%s' \n",recvBuf);
 	
 	close(sock);
 	
@@ -185,8 +187,6 @@ static struct fuse_operations fuse_oper =
 	.getattr = fuse_getattr,
 	.mkdir = fuse_mkdir,
 	.truncate = fuse_truncate,
-	.open = fuse_open,
-	.readdir = fuse_readdir,
 	
 };
 
@@ -195,19 +195,15 @@ static struct fuse_operations fuse_oper =
 
 int main(int argc, char *argv[])
 {
-	
 	if (argc !=4)
 	{
 		fprintf(stderr, "usage: IP Address, Port, directory.\n");
 		return 1;
 	}
 
-// either connect once and keep it open to send requests or create new on every request
+connect_to_server(argv[1],argv[2],argv[3]);
 
-//connect_to_server(argv[1],argv[2],argv[3]);
-//return 0;
-
-return fuse_main(argc,argv,&fuse_oper, NULL);
+return 0;
 
 
 
