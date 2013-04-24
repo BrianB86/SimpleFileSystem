@@ -154,13 +154,6 @@ int fuse_getattr(const char *path, struct stat *statbuf) //gets the arttribues o
 {
 	int res = 0;
 	
-	res = lstat(path,statbuf);
-	if(res != 0)
-	{
-		perror("lstat error");
-	}
-	
-	return res;
 	
 }
 
@@ -174,42 +167,18 @@ int fuse_mkdir(const char *path, mode_t mode)
 {
 	int res =0;
 	
-	res = mkdir(path,mode);
-	if(res < 0)
-	{
-		perror("mkdir error");
-	}
-	
-	return res;
 }
 
 int fuse_truncate(const char *path, off_t size)
 {
 	int res =0;
-	
-	res = truncate(path,size);
-	if(res < 0)
-	{
-		perror("truncate error");
-	}
-	
-	return res;
+
 }
 
 int fuse_open(const char *path, struct fuse_file_info *fi)
 {
 	int res = 0;
 	
-	int filedes;
-	
-	filedes = open(path, fi->flags);
-	
-	if(filedes < 0)
-	{
-		perror("Open error");
-	}
-	
-	return res;
 }
 
 
