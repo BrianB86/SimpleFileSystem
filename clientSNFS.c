@@ -205,10 +205,10 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 	
-	return fuse_main(argc, argv, &hello_oper, NULL);
+//	return fuse_main(argc, argv, &hello_oper, NULL);
 
-//connect_to_server(argv[1],argv[2],argv[3]);
-//return 0;
+connect_to_server(argv[1],argv[2],argv[3]);
+return 0;
 
 
 
