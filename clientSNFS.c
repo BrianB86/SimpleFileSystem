@@ -152,6 +152,10 @@ static int connect_to_server(const char* ipaddr, char* port, char* path)
 
 int fuse_getattr(const char *path, struct stat *statbuf) //gets the arttribues of the file
 {
+	char* ipaddr = argv[1];
+	char* port = argv[2];
+	char* path = argv[3];
+	
 	int res = 0;
 	
 	
@@ -200,10 +204,12 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "usage: IP Address, Port, directory.\n");
 		return 1;
 	}
+	
+	return fuse_main(argc, argv, &hello_oper, NULL);
 
-connect_to_server(argv[1],argv[2],argv[3]);
+//connect_to_server(argv[1],argv[2],argv[3]);
+//return 0;
 
-return 0;
 
 
 
