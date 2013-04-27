@@ -54,15 +54,20 @@
  *
  */
 
+char** argv;
+mode_t mode = S_IRWXU|S_IRWXG|S_IRWXO;
 
-
-static int connect_to_server(const char* ipaddr, char* port, char* path)
+static int connect_to_server(const char* ipaddr, char* port, char* path, char* recvBuf, int recvSize)
 {
+	printf("argv[1]: %s\n", argv[1]);
+	printf("argv[2]: %s\n", argv[2]);
+	printf("argv[3]: %s\n", argv[3]);
+	
 	int setup, sock;
 	struct addrinfo hints;
 	struct addrinfo *server_info;
-	char recvBuf[1024] = {0}; //buffer of received data. This is temp to get the idea of recv!!!!
-	int recvSize = 1024; // size of recvBuf
+	//char recvBuf[1024] = {0}; //buffer of received data. This is temp to get the idea of recv!!!!
+	//int recvSize = 1024; // size of recvBuf
 	
 	int good_port = atoi(port);
 	char port_buff[50];
@@ -145,69 +150,282 @@ static int connect_to_server(const char* ipaddr, char* port, char* path)
 	printf("client received '%s' \n",recvBuf);
 	
 	close(sock);
-	
 	return 0;
 
 }
 
-int fuse_getattr(const char *path, struct stat *statbuf) //gets the arttribues of the file
+int fuse_getattr(const char *path, struct stat *statbuf)
 {
-	char* ipaddr = argv[1];
-	char* port = argv[2];
-	char* path = argv[3];
 	
-	int res = 0;
+	// check if stat struct is accessable from fuse_file_info if it is look at open dir, close dir etc...
 	
-	
-}
+	char *ipaddr = argv[1];
+	char *port = argv[2];
 
-int fuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi)
-{
-	int res = 0;
+	memset(stbuf, 0, sizeof(struct stat));
+	
+	char recvBuf[1024] = {0};
+ 
+    connect_to_server(ipaddr,port,path,recvBuf,1024);
+    
+   
+
+	if (strcmp(path, "/") == 0) {
+		stbuf->st_mode = S_IFDIR | 0755;
+		stbuf->st_nlink = 2;
+	} else if (strcmp(path, file01_path) == 0) {
+		stbuf->st_mode = S_IFREG | 0777;
+		stbuf->st_nlink = 1;
+		stbuf->st_size = file01_len;
+	} else if (strcmp(path, file02_path) == 0) {
+		stbuf->st_mode = S_IFREG | 0777;
+		stbuf->st_nlink = 1;
+		stbuf->st_size = file02_len;
+	}
+	else
+		res = -ENOENT;
+
+	return 0;
 	
 }
 
 int fuse_mkdir(const char *path, mode_t mode)
 {
-	int res =0;
+	
+	return 0;
 	
 }
 
 int fuse_truncate(const char *path, off_t size)
 {
-	int res =0;
+	char *ipaddr = argv[1];
+	char *port = argv[2];
+	
+	/*
+	if(size > MAX_FILE_SIZE || size < 0)
+	{
+		return -EINVAL;
+	}
+	*/
+	 
+	if(strcmp(path, file01_path) != 0)
+	{
+		char recvBuf[1024] = {0};
+ 
+		connect_to_server(ipaddr,port,path,recvBuf,1024);
+		
+		//file01_len = size;
+	}
+	
+	if(strcmp(path, file02_path) != 0 )
+	{
+		char recvBuf[1024] = {0};
+ 
+		connect_to_server(ipaddr,port,path,recvBuf,1024);
+		
+ 		//file02_len = size;
+	}
+	
+	return 0; 
+	
+	//check errors.
 
 }
 
-int fuse_open(const char *path, struct fuse_file_info *fi)
+int fuse_open(const char *path, struct fuse_file_info *fi, mode_t mode)
 {
-	int res = 0;
+	char *ipaddr = argv[1];
+	char *port = argv[2];
+	
+	if(fi->flags & 3 == O_CREAT && strcmp(path, file01_path == 0))
+	{
+		return -EEXIST;
+	}
+	
+	if (fi->flags & 3 != O_CREAT && strcmp(path, file01_path) != 0 && strcmp(path, file02_path) != 0)
+	{
+		return -ENOENT;
+	}	
+	
+	char recvBuf[1024] = {0};
+ 
+    connect_to_server(ipaddr,port,path,recvBuf,1024);
+	
+	return 0;
+}
+
+int fuse_flush(const char *path, struct fuse_file_info *fi)
+{
+	char *ipaddr = argv[1];
+	char *port = argv[2];
+	
+	if (strcmp(path, file01_path) != 0 || strcmp(path, file02_path) != 0 )
+	{
+		char recvBuf[1024] = {0};
+ 
+		connect_to_server(ipaddr,port,path,recvBuf,1024);
+		fi->flush = 1;
+	}
+	
+	return 0;
+}
+
+int fuse_release(const char *path, struct fuse_file_info *fi)
+{
+	char *ipaddr = argv[1];
+	char *port = argv[2];
+	
+	if (strcmp(path, file01_path) != 0 || strcmp(path, file02_path) != 0 )
+	{
+		
+		if(fi->flush == 1)
+		{
+			char recvBuf[1024] = {0};
+ 
+			connect_to_server(ipaddr,port,path,recvBuf,1024);
+			
+			fi->flags & 3 = FD_CLOEXEC;
+		}
+	}
+	
+	return 0;
+	
 	
 }
 
+int fuse_create(const char* path, mode_t mode, struct fuse_file_info *fi)
+{
+	int fd;
+	fi->flags = O_CREAT|O_WRONLY|O_TRUNC; 
+	
+	int fd = fuse_open(path,fi,mode);
+	
+	if(fd == -1)
+	{
+		perror("Error in file creation\n");
+		return -1;
+	}
+	
+	return 0;
+}
+
+static int fuse_read(char* path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi)
+{
+	char *ipaddr = argv[1];
+	char *port = argv[2];
+	
+	size_t len;
+ 
+    // if( ( strcmp(path, file01_path) != 0 ) && ( strcmp(path, file02_path) != 0 ) )
+    //     return -ENOENT;
+ 
+     char recvBuf[1024] = {0};
+ 
+     connect_to_server(ipaddr,port,path,recvBuf,1024);
+ 
+     len = strlen(recvBuf);
+     if (offset < len) {
+         if (offset + size > len)
+             size = len - offset;
+         memcpy(buf, recvBuf + offset, size);
+     } else
+         size = 0;
+ 
+      return size;
+
+	
+}
+
+int fuse_write(const char *path,const char *buf,size_t size,off_t offset,struct fuse_file_info *fi)
+{
+	char *ipaddr = argv[1];
+	char *port = argv[2];
+	
+	size_t len;
+ 
+    // if( ( strcmp(path, file01_path) != 0 ) && ( strcmp(path, file02_path) != 0 ) )
+    //     return -ENOENT;
+	
+     char recvBuf[1024] = {0};
+     
+	// basically the same as read except when you write the buffer is filled with what has to be written by the server.
+	
+     connect_to_server(ipaddr,port,path,recvBuf,1024);
+ 
+     len = strlen(recvBuf);
+     if (offset < len) {
+         if (offset + size > len)
+             size = len - offset;
+         memcpy(buf, recvBuf + offset, size);
+     } else
+         size = 0;
+ 
+      return size;
+}
+
+int fuse_opendir(const char *path, struct fuse_file_info *fi)
+{
+	DIR *dp;
+	
+	if(fi->fh->st_mode != S_IFDIR)  //not sure if this is allowed but we must tst if the file is a directory
+	{
+		return -ENOTDIR
+	}else{
+		
+		char recvBuf[1024] = {0};
+		
+		connect_to_server(ipaddr,port,path,recvBuf,1024);
+		
+		// this returns a pointer to the directory
+		
+		if (dp == NULL)
+		{
+			perror("Error in opening the directory\n");
+		}
+		
+	}
+	
+	return dp;
+	
+}
+
+int fuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset,struct fuse_file_info *fi)
+{
+	DIR *dp;
+	
+}
 
 static struct fuse_operations fuse_oper = 
 {
 	.getattr = fuse_getattr,
 	.mkdir = fuse_mkdir,
 	.truncate = fuse_truncate,
+	.read = fuse_read,
+	.open = fuse_open,
+	.create = fuse_create,
+	.flush = fuse_flush,
+	.release = fuse_release,
+	.write = fuse_write,
+	.opendir = fuse_opendir,
+	.readdir = fuse_readdir,
 	
 };
 
 
 
 
-int main(int argc, char *argv[])
+int main(int argc, char **av)
 {
-	if (argc !=4)
-	{
-		fprintf(stderr, "usage: IP Address, Port, directory.\n");
-		return 1;
-	}
-	
-//	return fuse_main(argc, argv, &hello_oper, NULL);
+//	if (argc !=4)
+//	{
+//		fprintf(stderr, "usage: IP Address, Port, directory.\n");
+//		return 1;
+//	}
 
-connect_to_server(argv[1],argv[2],argv[3]);
+	argv = av;
+	
+	return fuse_main(argc,argv+2,&fuse_oper);
+
 return 0;
 
 

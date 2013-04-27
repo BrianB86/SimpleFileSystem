@@ -38,6 +38,7 @@ int   next_thread;
 int   runnable;
 int   threads_stopped[10];
 unsigned int client_connected;
+
  
 
 /* Testing code */
