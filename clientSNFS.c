@@ -147,7 +147,7 @@ static int connect_to_server(const char* ipaddr, char* port, char* path, char* r
 
 	recvBuf[bytes_received] = '\0';
 	
-	printf("client received '%s' \n",recvBuf);
+	//printf("client received '%s' \n",recvBuf);
 	
 	close(sock);
 	return 0;
@@ -214,7 +214,11 @@ int fuse_truncate(const char *path, off_t size)
  
 		connect_to_server(ipaddr,port,path,recvBuf,1024);
 		
-		//file01_len = size;
+		if(recvBuf == -1)
+		{
+			perror("Error in truncating the file.\n");
+			return -1;
+		}
 	}
 	
 	if(strcmp(path, file02_path) != 0 )
@@ -223,12 +227,17 @@ int fuse_truncate(const char *path, off_t size)
  
 		connect_to_server(ipaddr,port,path,recvBuf,1024);
 		
- 		//file02_len = size;
+		if(recvBuf == -1)
+		{
+			perror("Error in truncating the file.\n");
+			return -1;
+		}
+	
 	}
 	
 	return 0; 
 	
-	//check errors.
+	//check errors on server.
 
 }
 
@@ -250,8 +259,15 @@ int fuse_open(const char *path, struct fuse_file_info *fi, mode_t mode)
 	char recvBuf[1024] = {0};
  
     connect_to_server(ipaddr,port,path,recvBuf,1024);
-	
-	return 0;
+    
+    if(recvBuf->st_ino != NULL)
+    {
+		return recvBuf;
+	}
+	else{
+		perror("Error in opening file.\n");
+		return -1;
+	}
 }
 
 int fuse_flush(const char *path, struct fuse_file_info *fi)
@@ -264,7 +280,12 @@ int fuse_flush(const char *path, struct fuse_file_info *fi)
 		char recvBuf[1024] = {0};
  
 		connect_to_server(ipaddr,port,path,recvBuf,1024);
-		fi->flush = 1;
+		
+		if(recvBuf == -1)
+		{
+			return -EBADF;
+		}
+		
 	}
 	
 	return 0;
@@ -277,19 +298,18 @@ int fuse_release(const char *path, struct fuse_file_info *fi)
 	
 	if (strcmp(path, file01_path) != 0 || strcmp(path, file02_path) != 0 )
 	{
-		
-		if(fi->flush == 1)
-		{
 			char recvBuf[1024] = {0};
  
 			connect_to_server(ipaddr,port,path,recvBuf,1024);
 			
-			fi->flags & 3 = FD_CLOEXEC;
-		}
+			if(recvBuf == -1)
+			{
+			return -EBADF;
+			}
+	
 	}
 	
 	return 0;
-	
 	
 }
 
