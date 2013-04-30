@@ -2,14 +2,21 @@
 #include <fuse.h>
 #include <stdio.h>
 #include <errno.h>
+#include <ctype.h>
 #include <stdlib.h>
+#include <fcntl.h>
+#include <libgen.h>
+#include <limits.h>
 #include <netdb.h>
 #include <string.h>
+#include <dirent.h>
 #include <netinet/in.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 
+
 #define FUSE_USE_VERSION 26
+
 
 /* Reference to the sockaddr struct
  *
@@ -56,6 +63,14 @@
 
 char** argv;
 mode_t mode = S_IRWXU|S_IRWXG|S_IRWXO;
+
+struct command_struct{
+		char command;	//type of command
+		char* path;	
+		int len_path;				
+	};
+		
+
 
 static int connect_to_server(const char* ipaddr, char* port, char* path, char* recvBuf, int recvSize)
 {
@@ -121,7 +136,9 @@ static int connect_to_server(const char* ipaddr, char* port, char* path, char* r
 	
 	
 	
-	bytes_sent = send(sock,message,len,0);
+	//bytes_sent = send(sock,message,len,0);
+	
+	bytes_sent = send(sock,recvBuf,len,0);
 	
 	if(bytes_sent == -1)
 	{
@@ -159,17 +176,17 @@ int fuse_getattr(const char *path, struct stat *statbuf)
 	
 	// check if stat struct is accessable from fuse_file_info if it is look at open dir, close dir etc...
 	
-	char *ipaddr = argv[1];
-	char *port = argv[2];
+	//char *ipaddr = argv[1];
+	//char *port = argv[2];
 
-	memset(stbuf, 0, sizeof(struct stat));
+	//memset(stbuf, 0, sizeof(struct stat));
 	
-	char recvBuf[1024] = {0};
+	//char recvBuf[1024] = {0};
  
-    connect_to_server(ipaddr,port,path,recvBuf,1024);
+    //connect_to_server(ipaddr,port,path,recvBuf,1024);
     
    
-
+	/*
 	if (strcmp(path, "/") == 0) {
 		stbuf->st_mode = S_IFDIR | 0755;
 		stbuf->st_nlink = 2;
@@ -186,28 +203,40 @@ int fuse_getattr(const char *path, struct stat *statbuf)
 		res = -ENOENT;
 
 	return 0;
+	*/
+
+	int retstat = lstat(path, statbuf);
+    if (retstat != 0)
+		perror("error in getting attributes.\n");
+    
+    return retstat;	
 	
 }
 
 int fuse_mkdir(const char *path, mode_t mode)
 {
-	
-	return 0;
-	
+	int retstat = 0;
+    
+    retstat = mkdir(path, mode);
+    if (retstat < 0)
+	perror("Error in making directory.\n");
+    
+    return retstat;
+
 }
 
 int fuse_truncate(const char *path, off_t size)
 {
+	/*
 	char *ipaddr = argv[1];
 	char *port = argv[2];
-	
-	/*
+	* 
 	if(size > MAX_FILE_SIZE || size < 0)
 	{
 		return -EINVAL;
 	}
 	*/
-	 
+	/*
 	if(strcmp(path, file01_path) != 0)
 	{
 		char recvBuf[1024] = {0};
@@ -238,11 +267,20 @@ int fuse_truncate(const char *path, off_t size)
 	return 0; 
 	
 	//check errors on server.
-
+	*/
+	
+	int retstat = 0;
+	
+    retstat = truncate(path, size);
+    if (retstat < 0)
+	perror("Error in truncating file.\n");
+    
+    return retstat;
 }
 
 int fuse_open(const char *path, struct fuse_file_info *fi, mode_t mode)
 {
+	/*
 	char *ipaddr = argv[1];
 	char *port = argv[2];
 	
@@ -257,7 +295,13 @@ int fuse_open(const char *path, struct fuse_file_info *fi, mode_t mode)
 	}	
 	
 	char recvBuf[1024] = {0};
- 
+	
+	command_struct->command = "O";
+	command_struct->path = path;
+	command_struct->len_path = strlen(path);
+	
+	recvBuf[0] = command;
+	
     connect_to_server(ipaddr,port,path,recvBuf,1024);
     
     if(recvBuf->st_ino != NULL)
@@ -268,10 +312,22 @@ int fuse_open(const char *path, struct fuse_file_info *fi, mode_t mode)
 		perror("Error in opening file.\n");
 		return -1;
 	}
+	*/
+	
+    int fd;
+    
+    fd = open(path, fi->flags);
+    if (fd < 0)
+	perror("Error in opeing the file.\n");
+    
+    fi->fh = fd;
+    
+    return 0;
 }
 
 int fuse_flush(const char *path, struct fuse_file_info *fi)
 {
+	/*
 	char *ipaddr = argv[1];
 	char *port = argv[2];
 	
@@ -287,12 +343,16 @@ int fuse_flush(const char *path, struct fuse_file_info *fi)
 		}
 		
 	}
+	return 0;
+	*/
 	
 	return 0;
+	
 }
 
 int fuse_release(const char *path, struct fuse_file_info *fi)
 {
+	/*
 	char *ipaddr = argv[1];
 	char *port = argv[2];
 	
@@ -310,11 +370,18 @@ int fuse_release(const char *path, struct fuse_file_info *fi)
 	}
 	
 	return 0;
+	*/
 	
+	int retstat = 0;
+	
+    retstat = close(fi->fh);
+    
+    return retstat;
 }
 
-int fuse_create(const char* path, mode_t mode, struct fuse_file_info *fi)
+static int fuse_create(const char* path, mode_t mode, struct fuse_file_info *fi)
 {
+	/*
 	int fd;
 	fi->flags = O_CREAT|O_WRONLY|O_TRUNC; 
 	
@@ -327,10 +394,19 @@ int fuse_create(const char* path, mode_t mode, struct fuse_file_info *fi)
 	}
 	
 	return 0;
+	*/
+	
+    int fd;
+    fd = creat(path, mode);
+    if (fd < 0)
+	perror("Error in file creation.\n");
+    fi->fh = fd;
+    return 0;
 }
 
-static int fuse_read(char* path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi)
+int fuse_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi)
 {
+	/*
 	char *ipaddr = argv[1];
 	char *port = argv[2];
 	
@@ -352,12 +428,21 @@ static int fuse_read(char* path, char *buf, size_t size, off_t offset, struct fu
          size = 0;
  
       return size;
-
+	*/
+	
+	int retstat = 0;
+    
+    retstat = pread(fi->fh, buf, size, offset);
+    if (retstat < 0)
+	perror("Reading error.\n");
+    
+    return retstat;
 	
 }
 
 int fuse_write(const char *path,const char *buf,size_t size,off_t offset,struct fuse_file_info *fi)
 {
+	/*
 	char *ipaddr = argv[1];
 	char *port = argv[2];
 	
@@ -381,10 +466,20 @@ int fuse_write(const char *path,const char *buf,size_t size,off_t offset,struct 
          size = 0;
  
       return size;
+       */
+      
+     int retstat = 0;
+
+    retstat = pwrite(fi->fh, buf, size, offset);
+    if (retstat < 0)
+	perror("Error in writing to file");
+    
+    return retstat;
 }
 
 int fuse_opendir(const char *path, struct fuse_file_info *fi)
 {
+	/*
 	DIR *dp;
 	
 	if(fi->fh->st_mode != S_IFDIR)  //not sure if this is allowed but we must tst if the file is a directory
@@ -406,28 +501,68 @@ int fuse_opendir(const char *path, struct fuse_file_info *fi)
 	}
 	
 	return dp;
+	*/
 	
-}
-
-int fuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset,struct fuse_file_info *fi)
-{
 	DIR *dp;
+    int retstat = 0;
+    
+    dp = opendir(path);
+    if (dp == NULL)
+	perror("Error in opening directory");
+    
+    fi->fh = (intptr_t) dp;
+    
+    return retstat;
 	
 }
 
-static struct fuse_operations fuse_oper = 
+int fuse_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi)
+{
+    int retstat = 0;
+    DIR *dp;
+    struct dirent *de;
+
+    // once again, no need for fullpath -- but note that I need to cast fi->fh
+    dp = (DIR *) (uintptr_t) fi->fh;
+
+    de = readdir(dp);
+
+    // This will copy the entire directory into the buffer.  The loop exits
+    // when either the system readdir() returns NULL, or filler()
+    // returns something non-zero.  The first case just means I've
+    // read the whole directory; the second means the buffer is full.
+    do {
+	if (filler(buf, de->d_name, NULL, 0) != 0) 
+	    return -ENOMEM;
+	
+    } while ((de = readdir(dp)) != NULL);
+    
+    return retstat;
+}
+
+int fuse_releasedir(const char *path, struct fuse_file_info *fi)
+{
+    int retstat = 0;
+    
+    closedir((DIR *) (uintptr_t) fi->fh);
+    
+    return retstat;
+}
+
+struct fuse_operations fuse_oper = 
 {
 	.getattr = fuse_getattr,
 	.mkdir = fuse_mkdir,
 	.truncate = fuse_truncate,
 	.read = fuse_read,
 	.open = fuse_open,
-	.create = fuse_create,
 	.flush = fuse_flush,
 	.release = fuse_release,
-	.write = fuse_write,
 	.opendir = fuse_opendir,
+	.write = fuse_write,
 	.readdir = fuse_readdir,
+	.releasedir = fuse_releasedir,
+	.create = fuse_create
 	
 };
 
@@ -444,7 +579,7 @@ int main(int argc, char **av)
 
 	argv = av;
 	
-	return fuse_main(argc,argv+2,&fuse_oper);
+	return fuse_main(argc,argv,&fuse_oper);
 
 return 0;
 
