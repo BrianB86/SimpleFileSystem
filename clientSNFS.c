@@ -1,11 +1,13 @@
 
 #include <fuse.h>
+#include <fuse_common.h>
 #include <stdio.h>
 #include <errno.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <fcntl.h>
 #include <libgen.h>
+#include <unistd.h>
 #include <limits.h>
 #include <netdb.h>
 #include <string.h>
@@ -16,6 +18,7 @@
 
 
 #define FUSE_USE_VERSION 26
+#define _XOPEN_SOURCE 500
 
 
 /* Reference to the sockaddr struct
@@ -60,7 +63,7 @@
  * };
  *
  */
-
+/*
 char** argv;
 mode_t mode = S_IRWXU|S_IRWXG|S_IRWXO;
 
@@ -129,7 +132,7 @@ static int connect_to_server(const char* ipaddr, char* port, char* path, char* r
 	
 	printf("Client Connecting\n");
 	
-	/* Testing Code */
+	
 	char* message = "Hello Server";
 	int len, bytes_sent;
 	len = strlen(message);
@@ -170,8 +173,9 @@ static int connect_to_server(const char* ipaddr, char* port, char* path, char* r
 	return 0;
 
 }
+*/
 
-int fuse_getattr(const char *path, struct stat *statbuf)
+static int fuse_getattr(const char *path, struct stat *statbuf)
 {
 	
 	// check if stat struct is accessable from fuse_file_info if it is look at open dir, close dir etc...
@@ -278,7 +282,7 @@ int fuse_truncate(const char *path, off_t size)
     return retstat;
 }
 
-int fuse_open(const char *path, struct fuse_file_info *fi, mode_t mode)
+static int fuse_open(const char *path, struct fuse_file_info *fi)
 {
 	/*
 	char *ipaddr = argv[1];
@@ -404,7 +408,8 @@ static int fuse_create(const char* path, mode_t mode, struct fuse_file_info *fi)
     return 0;
 }
 
-int fuse_read(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi)
+static int fuse_read(const char* path, char* buf, size_t size, off_t offset,
+			struct fuse_file_info *fi)
 {
 	/*
 	char *ipaddr = argv[1];
@@ -549,27 +554,34 @@ int fuse_releasedir(const char *path, struct fuse_file_info *fi)
     return retstat;
 }
 
-struct fuse_operations fuse_oper = 
-{
+/*
+static struct fuse_operations fizzle_operations = {
 	.getattr = fuse_getattr,
 	.mkdir = fuse_mkdir,
 	.truncate = fuse_truncate,
+	.open = fuse_open
 	.read = fuse_read,
-	.open = fuse_open,
 	.flush = fuse_flush,
 	.release = fuse_release,
 	.opendir = fuse_opendir,
 	.write = fuse_write,
 	.readdir = fuse_readdir,
 	.releasedir = fuse_releasedir,
-	.create = fuse_create
-	
+	.create = fuse_create,
+};*/
+
+static struct fuse_operations hello_oper = {
+	.getattr	= fuse_getattr,
+	//.readdir	= fuse_readdir,
+	.open		= fuse_open,
+	.read		= hello_read,
 };
 
 
 
 
-int main(int argc, char **av)
+
+int main(int argc, char *argv[])
 {
 //	if (argc !=4)
 //	{
@@ -577,9 +589,9 @@ int main(int argc, char **av)
 //		return 1;
 //	}
 
-	argv = av;
+	//argv = av;
 	
-	return fuse_main(argc,argv,&fuse_oper);
+	return fuse_main(argc,argv,&hello_oper,NULL);
 
 return 0;
 
