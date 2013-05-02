@@ -21,17 +21,31 @@
 #define FUSE_USE_VERSION 26
 #define _XOPEN_SOURCE 500
 
+
 //Let's assume that only two files are there stored in the server, each with size of 19
 
-static const char *file01_path = "/file01";
+//static const char *file01_path = "/file01";
 
-static const int file01_len = 19;
+//static const int file01_len = 19;
 
-static const char *file02_path = "/file02";
+//static const char *file02_path = "/file02";
 
-static const int file02_len = 19;
+//static const int file02_len = 19;
 
 int errno;
+
+//#define machine_path ((char*) fuse_get_context()->private_data)
+
+char* machine_path;
+
+static void fuse_path(const char* path, char full_path[PATH_MAX]) //gets the path given and concats the rest of the path of the machine.
+{
+	strcpy(full_path,machine_path);
+	strncat(full_path, path, PATH_MAX); 
+	printf("this is a path:%s\n",full_path);
+
+}
+
 
 static int snfs_getattr(const char *path, struct stat *stbuf)
 {
@@ -56,8 +70,9 @@ static int snfs_getattr(const char *path, struct stat *stbuf)
 		res = -ENOENT;
 	
 	*/
-	
-	res = lstat(path, stbuf);
+	char allPath[PATH_MAX];
+	fuse_path(path,allPath);
+	res = lstat(allPath,stbuf);
 	if(res!=0)
 		 printf("snfs_getattr: %s\n", strerror(errno));
 	return res;
@@ -83,8 +98,10 @@ static int snfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	int res = 0; 
 	DIR *dp;
 	struct dirent *de;
+	char allPath[PATH_MAX];
+	fuse_path(path,allPath);
 	
-	dp = (DIR *) (uintptr_t) fi->fh;
+	dp = (DIR *) opendir(allPath);
 	
 	de = readdir(dp);
 	
@@ -99,21 +116,26 @@ static int snfs_readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 	    return -ENOMEM;
 	}
     } while ((de = readdir(dp)) != NULL);
-   
-    return res;
+    
+	return res;
 }
 
 static int snfs_open(const char *path, struct fuse_file_info *fi)
 {
 	int res = 0;
 	int fd;
+	char allPath[PATH_MAX];
 	
-	fd = open(path, fi->flags);
+	fuse_path(path,allPath);
+	
+	fd = open(allPath, fi->flags);
 	if(fd < 0)
 		printf("snfs_open: %s\n", strerror(errno));
 	 
 	 fi->fh = fd;
 	 
+	printf("open a file:");
+
 	return res;
 }
 
@@ -121,13 +143,18 @@ static int snfs_create(const char *path, mode_t mode, struct fuse_file_info *fi)
 {
 	int res = 0;
 	int fd;
+	char allPath[PATH_MAX];
 	
-	fd = creat(path,O_CREAT|O_EXCL|O_WRONLY);
+	fuse_path(path,allPath);
+	
+	fd = creat(allPath,mode);
 	if(fd < 0)
 		printf("snfs_create: %s\n", strerror(errno));
 	
 	fi->fh = fd;
-	
+
+	printf("Created a file:");
+
 	return res;
 }
 
@@ -177,8 +204,11 @@ static int snfs_release(const char* path, struct fuse_file_info *fi)
 static int snfs_truncate(const char* path, off_t newsize)
 {
 	int res = 0;
+	char allPath[PATH_MAX];
 	
-	res = truncate(path,newsize);
+	fuse_path(path,allPath);
+	
+	res = truncate(allPath,newsize);
 	if(res < 0)
 	printf("snfs_truncate: %s\n", strerror(errno));
 	
@@ -202,7 +232,11 @@ static int snfs_opendir(const char *path, struct fuse_file_info *fi)
 	DIR *dp;
 	int res = 0;
 	
-	dp = opendir(path);
+	char allPath[PATH_MAX];
+	
+	fuse_path(path,allPath);
+	
+	dp = opendir(allPath);
 	if(dp == NULL)
 		printf("snfs_opendir: %s\n", strerror(errno));
 		
@@ -225,7 +259,11 @@ static int snfs_mkdir(const char *path, mode_t mode)
 {
 	int res = 0;
 	
-	res = mkdir(path,O_CREAT|O_EXCL|O_WRONLY);
+	char allPath[PATH_MAX];
+	
+	fuse_path(path,allPath);
+	
+	res = mkdir(allPath,mode);
 	if(res < 0)
 		printf("snfs_mkdir: %s\n", strerror(errno));
 	
@@ -248,5 +286,9 @@ static struct fuse_operations snfs_oper = {
 
 int main(int argc, char *argv[])
 {
+	mkdir("hello",S_IRWXU);
+	machine_path = realpath("hello",NULL);
+	printf("path:%s\n",machine_path);
+		
 	return fuse_main(argc, argv, &snfs_oper, NULL);
 }
