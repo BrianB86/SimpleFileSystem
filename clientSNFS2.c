@@ -271,17 +271,17 @@ static int snfs_mkdir(const char *path, mode_t mode)
 }
 
 static struct fuse_operations snfs_oper = {
-	.getattr	= snfs_getattr,
-	.readdir	= snfs_readdir,
-	.create     = snfs_create,
-	.open		= snfs_open,
-	.read		= snfs_read,
-	.release	= snfs_release,
-	.truncate	= snfs_truncate,
-	.write		= snfs_write,
-	.opendir	= snfs_opendir,
-	.releasedir	= snfs_releasedir,
-	.mkdir		= snfs_mkdir,
+	.getattr	= snfs_getattr,				//works
+	.readdir	= snfs_readdir,				//works
+	.create     = snfs_create,				//suspect
+	.open		= snfs_open,				//works	
+	.read		= snfs_read,				//suspect
+	.release	= snfs_release,				//works
+	.truncate	= snfs_truncate,			//works
+	.write		= snfs_write,				//NOT Working
+	.opendir	= snfs_opendir,				//works
+	.releasedir	= snfs_releasedir,			//works
+	.mkdir		= snfs_mkdir,				//NOT Working
 };
 
 int main(int argc, char *argv[])
