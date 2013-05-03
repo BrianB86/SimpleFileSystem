@@ -17,6 +17,7 @@
 #include <netinet/in.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 
 #define FUSE_USE_VERSION 26
 #define _XOPEN_SOURCE 500
@@ -143,15 +144,20 @@ static int snfs_create(const char *path, mode_t mode, struct fuse_file_info *fi)
 {
 	int res = 0;
 	int fd;
+	int fs;
 	char allPath[PATH_MAX];
 	
 	fuse_path(path,allPath);
 	
-	fd = creat(allPath,mode);
-	if(fd < 0)
-		printf("snfs_create: %s\n", strerror(errno));
+	fd = open(allPath, O_CREAT,O_WRONLY);
+    if(fd < 0)
+		printf("snfs_open: %s\n", strerror(errno));
 	
-	fi->fh = fd;
+	fs = creat(allPath,fd);
+	if(fs < 0)
+		printf("snfs_create: %s\n", strerror(errno));
+
+	fi->fh = fs;
 
 	printf("Created a file:");
 
@@ -218,12 +224,20 @@ static int snfs_truncate(const char* path, off_t newsize)
 static int snfs_write(const char *path, const char *buf, size_t size, off_t offset, struct fuse_file_info *fi)
 {
 	int res = 0;
+	int fd;
+	char allPath[PATH_MAX];
 	
-	res = pwrite(fi->fh, buf, size, offset);
+	fuse_path(path,allPath);
 	
+	fd = open(allPath, O_WRONLY);
+    if(fd < 0)
+		printf("snfs_open: %s\n", strerror(errno));
+	
+	res = pwrite(fd, buf, size, offset);
 	if(res < 0)
 		printf("snfs_write: %s\n", strerror(errno));
 		
+		close(fd);
 		return res;
 }
 
@@ -270,15 +284,31 @@ static int snfs_mkdir(const char *path, mode_t mode)
 	return res;
 }
 
+static int snfs_fgetattr(const char* path, struct stat *statbuf, struct fuse_file_info *fi)
+{
+	int res = 0;
+	
+	char allPath[PATH_MAX];
+	
+	fuse_path(path,allPath);
+
+	res = fstat(fi->fh,statbuf);
+	if(res<0)
+		printf("snfs_fgetattr: %s\n", strerror(errno));
+		
+	return res;
+}
+
 static struct fuse_operations snfs_oper = {
 	.getattr	= snfs_getattr,				//works
+	.fgetattr	= snfs_fgetattr,
 	.readdir	= snfs_readdir,				//works
-	.create     = snfs_create,				//suspect
+	.create     = snfs_create,				//Not Working
 	.open		= snfs_open,				//works	
-	.read		= snfs_read,				//suspect
+	.read		= snfs_read,				//works
 	.release	= snfs_release,				//works
 	.truncate	= snfs_truncate,			//works
-	.write		= snfs_write,				//NOT Working
+	.write		= snfs_write,				//works
 	.opendir	= snfs_opendir,				//works
 	.releasedir	= snfs_releasedir,			//works
 	.mkdir		= snfs_mkdir,				//NOT Working
