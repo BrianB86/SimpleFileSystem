@@ -1,4 +1,3 @@
-
 #define FUSE_USE_VERSION 26
 
 #include <fuse.h>
@@ -19,7 +18,6 @@
 #include <sys/socket.h>
 #include <sys/stat.h>
 
-#define FUSE_USE_VERSION 26
 #define _XOPEN_SOURCE 500
 
 
@@ -48,13 +46,13 @@ static void fuse_path(const char* path, char full_path[PATH_MAX]) //gets the pat
 }
 
 
-static int snfs_getattr(const char *path, struct stat *stbuf)
+static int snfs_getattr(const char *path, struct stat *statbuf)
 {
 	int res = 0;
 	
-	/*
-	memset(stbuf, 0, sizeof(struct stat));
 	
+	memset(statbuf, 0, sizeof(struct stat));
+	/*
 	if (strcmp(path, "/testing") == 0) {
 		stbuf->st_mode = S_IFDIR | 0777;
 		stbuf->st_nlink = 2;
@@ -73,7 +71,8 @@ static int snfs_getattr(const char *path, struct stat *stbuf)
 	*/
 	char allPath[PATH_MAX];
 	fuse_path(path,allPath);
-	res = lstat(allPath,stbuf);
+	res = lstat(allPath,statbuf);
+	
 	if(res!=0)
 		 printf("snfs_getattr: %s\n", strerror(errno));
 	return res;
@@ -144,25 +143,21 @@ static int snfs_create(const char *path, mode_t mode, struct fuse_file_info *fi)
 {
 	int res = 0;
 	int fd;
-	int fs;
 	char allPath[PATH_MAX];
 	
 	fuse_path(path,allPath);
+		
+	fd = open(allPath,O_CREAT | O_EXCL | O_WRONLY, mode);
 	
-	fd = open(allPath, O_CREAT,O_WRONLY);
-    if(fd < 0)
-		printf("snfs_open: %s\n", strerror(errno));
-	
-	fs = creat(allPath,fd);
-	if(fs < 0)
-		printf("snfs_create: %s\n", strerror(errno));
-
-	fi->fh = fs;
+	fi->fh = fd;
 
 	printf("Created a file:");
 
 	return res;
 }
+
+
+
 
 static int snfs_read(const char *path, char *buf, size_t size, off_t offset,
 		      struct fuse_file_info *fi)
@@ -301,7 +296,7 @@ static int snfs_fgetattr(const char* path, struct stat *statbuf, struct fuse_fil
 
 static struct fuse_operations snfs_oper = {
 	.getattr	= snfs_getattr,				//works
-	.fgetattr	= snfs_fgetattr,
+	.fgetattr	= snfs_fgetattr,			
 	.readdir	= snfs_readdir,				//works
 	.create     = snfs_create,				//Not Working
 	.open		= snfs_open,				//works	
